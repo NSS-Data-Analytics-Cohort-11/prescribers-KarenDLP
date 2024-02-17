@@ -155,35 +155,44 @@ Group By prescriber.nppes_provider_first_name, prescriber.nppes_provider_last_or
 
 --Question 7
 --The goal of this exercise is to generate a full list of all pain management specialists in Nashville and the number of claims they had for each opioid. **Hint:** The results from all 3 parts will have 637 rows.
-
 --cross join hint
-SELECT specialty_description AS description, nppes_provider_city AS city, opioid_drug_flag, long_acting_opiod_drug_flag
-FROM prescriber AS pres
-LEFT JOIN drug
-ON pres.drug_name = drug.drug_name
-LEFT JOIN 
-WHERE city like 'Nashville'
-
- Select nppes_provider_city
- FROM prescriber
-
-
 
 -- a. First, create a list of all npi/drug_name combinations for pain management specialists (specialty_description = 'Pain Management) in the city of Nashville (nppes_provider_city = 'NASHVILLE'), where the drug is an opioid (opiod_drug_flag = 'Y'). **Warning:** Double-check your query before running it. You will only need to use the prescriber and drug tables since you don't need the claims numbers yet.
+SELECT drug.drug_name, prescriber.npi
+FROM prescriber
+CROSS JOIN drug
+WHERE prescriber.specialty_description ILIKE 'pain management'
+AND prescriber.nppes_provider_city ILIKE 'nashville' AND drug.opioid_drug_flag = 'Y';
+
 
 
 --  b. Next, report the number of claims per drug per prescriber. Be sure to include all combinations, whether or not the prescriber had any claims. You should report the npi, the drug name, and the number of claims (total_claim_count).
-SELECT prescriber.npi, prescription.drug_name, SUM(prescription.toal_claim_count)
+
+SELECT prescriber.npi, drug.drug_name, SUM(prescription.total_claim_count)
 FROM prescriber
 CROSS JOIN prescription
 CROSS JOIN drug
 WHERE prescriber.specialty_description = 'Pain Management'
 AND prescriber.nppes_provider_city = 'NASHVILLE'
 AND drug.opioid_drug_flag = 'Y'
-Group BY prescriber.npi, prescription.drug_name
+Group BY prescriber.npi, drug.drug_name
 
 --  c. Finally, if you have not done so already, fill in any missing values for total_claim_count with 0. Hint - Google the COALESCE function.
 
+SELECT prescriber.npi, drug.drug_name,
+ 	(SELECT(COALESCE(SUM(prescription.total_claim_count),0))
+	FROM prescription
+	WHERE prescription.npi = prescriber.npi
+	AND prescription.drug_name = drug.drug_name) AS total_claims
+FROM prescriber
+CROSS JOIN drug
+LEFT JOIN prescription
+ON drug.drug_name = prescription.drug_name
+WHERE prescriber.specialty_description ILIKE 'Pain Management'
+AND prescriber.nppes_provider_city ILIKE 'NASHVILLE'
+AND drug.opioid_drug_flag = 'Y'
+GROUP BY drug.drug_name, prescriber.npi
+ORDER BY total_claims DESC;
 
 
 
